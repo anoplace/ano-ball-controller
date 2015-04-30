@@ -17,7 +17,9 @@
     "hubot-rules": "^0.1.0",
     "hubot-scripts": "^2.5.16",
     "hubot-shipit": "^0.2.0",
-    "hubot-youtube": "^0.1.2"
+    "hubot-youtube": "^0.1.2",
+    "osc": "^1.1.1",
+    "serialport": "^1.6.3"
   },
   "engines": {
     "node": "0.10.x"
