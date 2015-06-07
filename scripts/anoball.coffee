@@ -11,8 +11,60 @@
 module.exports = (robot) ->
   Fs = require 'fs'
   SocketIo = require 'socket.io'
-  SerialPort = require('serialport').SerialPort
   Osc = require 'osc'
+  Lpr9201 = require 'lpr9201'
+  Result = Lpr9201.Result
+
+  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A7YU3BML', {baudrate: 9600}
+
+
+  lpr9201Driver.on 'open' () ->
+    console.log 'lpr9201 open'
+
+  lpr9201Driver.on 'close' () ->
+    console.log 'lpr9201 close'
+
+  lpr9201Driver.on 'error' () ->
+    console.log 'lpr9201 error'
+
+  lpr9201Driver.on 'data' () ->
+    console.log 'lpr9201 data'
+
+  lpr9201Driver.on 'data', (data) ->
+    if Result.Ack.canParse(data)
+      console.log 'Ack'
+
+    else if Result.ConnectionConfirmation.canParse(data)
+      console.log 'ConnectionConfirmation'
+      lpr9201Driver.send.activateRequest()
+
+    else if Result.EdScan.canParse(data)
+      edScan = new Result.EdScan(data);
+      console.log 'EdScan', edScan.value
+
+    else if (Result.Nack.canParse(data))
+      nack = new Result.Nack(data)
+      console.log 'Nack', nack.reasonCode
+
+    else if Result.ProfileParameterResult.canParse(data)
+      profileParameterResult = new Result.ProfileParameterResult(data)
+      console.log 'ProfileParameterResult', profileParameterResult.value
+
+    else if (Result.ReceiveData.canParse(data))
+      receiveData = new Result.ReceiveData(data)
+      console.log 'ReceiveData', receiveData.datas
+
+    else if (Result.Ring.canParse(data))
+      console.log 'Ring'
+      lpr9201Driver.send.readReceiveData()
+
+    else if (Result.Rssi.canParse(data))
+      rssi = new Result.Rssi(data)
+      console.log 'Rssi', rssi.value
+
+    else if (Result.Wup.canParse(data))
+      console.log 'Wup'
+
 
   io = SocketIo.listen(robot.server)
 
@@ -29,29 +81,10 @@ module.exports = (robot) ->
 
   power = 1
 
-  serialDevices = [
-    '/dev/tty.usbmodem14131',
-    '/dev/tty.usbserial-A6008hAW'
-  ]
 
   ledControllers = []
-  ###
-  for serialDevice in serialDevices
-    ledController = new SerialPort(serialDevice, {
-      baudrate: 115200
-    }, true)
 
-    ledController.on 'open', ->
-      console.log 'led controller open'
 
-    ledController.on 'close', ->
-      console.log 'led controller close'
-
-    ledController.on 'error', (event) ->
-      console.log 'led controller error:', event
-
-    ledControllers.push ledController
-  ###
 
 
   udpPort = new Osc.UDPPort {
@@ -73,6 +106,19 @@ module.exports = (robot) ->
     })
 
   udpPort.open()
+
+
+
+  robot.hear /value (\d+) (\d+) (\d+) (\d+)/i, (res) ->
+    console.log('value')
+
+    lpr9201.send.dataTransmission 0xFFFF, [
+      parseInt res.match[1]
+      parseInt res.match[2]
+      parseInt res.match[3]
+      parseInt res.match[4]
+    ], false, false, true
+
 
   robot.hear /red/i, (res) ->
     console.log('red')
