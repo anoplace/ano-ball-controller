@@ -15,20 +15,19 @@ module.exports = (robot) ->
   Lpr9201 = require 'lpr9201'
   Result = Lpr9201.Result
 
-  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A7YU3BML', {baudrate: 9600}
+  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254T2', {baudrate: 9600}, true
+  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254T2', {baudrate: 230400}, true
 
 
-  lpr9201Driver.on 'open' () ->
+  lpr9201Driver.on 'open', () ->
+    lpr9201Driver.send.activateRequest()
     console.log 'lpr9201 open'
 
-  lpr9201Driver.on 'close' () ->
+  lpr9201Driver.on 'close', () ->
     console.log 'lpr9201 close'
 
-  lpr9201Driver.on 'error' () ->
+  lpr9201Driver.on 'error', () ->
     console.log 'lpr9201 error'
-
-  lpr9201Driver.on 'data' () ->
-    console.log 'lpr9201 data'
 
   lpr9201Driver.on 'data', (data) ->
     if Result.Ack.canParse(data)
@@ -71,9 +70,8 @@ module.exports = (robot) ->
   io.on 'connection', (socket) ->
     console.log 'web interface connection'
 
-    socket.on 'execute', (data) ->
+    socket.on 'led', (data) ->
       console.log data
-      commandExecute data.command
 
     socket.on 'disconnect', ->
       console.log 'web interface disconnect'
@@ -108,16 +106,127 @@ module.exports = (robot) ->
   udpPort.open()
 
 
+  ###
+  colorApply(num) ->
+    red = (num >> 16) & 0xFF
+    green = (num >> 8) & 0xFF
+    blue = (num >> 0) & 0xFF
 
-  robot.hear /value (\d+) (\d+) (\d+) (\d+)/i, (res) ->
+    lpr9201Driver.send.dataTransmission 0x0001, [
+      0x00,
+      0x00,
+      red,
+      0x00,
+    ], false, false, true
+  ###
+
+
+  robot.hear /v 0x(\w+) 0x(\w+)/i, (res) ->
     console.log('value')
 
-    lpr9201.send.dataTransmission 0xFFFF, [
-      parseInt res.match[1]
-      parseInt res.match[2]
-      parseInt res.match[3]
-      parseInt res.match[4]
+    ###
+    v1 = parseInt(res.match[1], 16)
+    v2 = parseInt(res.match[2], 16)
+
+    console.log(v1)
+    console.log(v2)
+
+    lpr9201Driver.send.dataTransmission 0x0001, [
+      (v1 >> 0) & 0xFF,
+      (v1 >> 8) & 0xFF,
+      (v2 >> 0) & 0xFF,
+      (v2 >> 8) & 0xFF,
+
     ], false, false, true
+
+    ###
+
+    v = false
+
+    setInterval () ->
+
+      v = !v
+
+      a = 0x10
+      if v
+        a = 0x00
+      else
+        a = 0x10
+
+      console.log v
+
+      lpr9201Driver.send.dataTransmission 0x0001, [
+        0x00, a, 0x00,
+        #], false, false, true
+      ], false, false, true
+    , 30
+
+  robot.hear /h/i, (res) ->
+    console.log 'send'
+
+    arr = []
+
+    for i in [0..11]
+      arr.push i * 20
+      arr.push 255 - i * 20
+      arr.push 0
+
+    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+
+
+  robot.hear /j/i, (res) ->
+    console.log 'send'
+
+    arr = []
+
+    for i in [0..11]
+      arr.push i * 20
+      arr.push 0
+      arr.push 0
+
+    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+
+
+  robot.hear /k/i, (res) ->
+    console.log 'send'
+
+    arr = []
+
+    for i in [0..11]
+      arr.push i * 20
+      arr.push 0
+      arr.push 255 - i * 20
+
+    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+
+
+  robot.hear /a (\d+) (\d+) (\d+)/i, (res) ->
+    v1 = parseInt res.match[1]
+    v2 = parseInt res.match[2]
+    v3 = parseInt res.match[3]
+
+    console.log v1
+    console.log v2
+    console.log v3
+
+    ###
+    lpr9201Driver.send.dataTransmission 0x0001, [
+      v1 & 0xFF,
+      v2 & 0xFF,
+      v3 & 0xFF,
+    ], false, false, true
+    ###
+
+    arr = []
+
+    for i in [0..11]
+      arr.push v1
+      arr.push v2
+      arr.push v3
+
+    console.log arr.length
+
+    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
 
 
   robot.hear /red/i, (res) ->
