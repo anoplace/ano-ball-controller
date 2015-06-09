@@ -174,6 +174,12 @@ module.exports = (robot) ->
     lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
 
 
+  slave = 0
+
+  robot.hear /slave (\d+)/i, (res) ->
+    slave = parseInt res.match[1]
+    console.log 'slave', slave
+
   robot.hear /j/i, (res) ->
     console.log 'send'
 
@@ -229,9 +235,33 @@ module.exports = (robot) ->
     lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
 
 
-  robot.hear /red/i, (res) ->
-    console.log('red')
-    sendAll(0xFF, 0x00, 0x00)
+  robot.hear /r/i, (res) ->
+    arr = []
+    for i in [0..11]
+      arr.push 0xFF
+      arr.push 0x00
+      arr.push 0x00
+
+    #lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+    lpr9201Driver.send.dataTransmission 1, arr, false, false, false
+
+  robot.hear /g/i, (res) ->
+    arr = []
+    for i in [0..11]
+      arr.push 0x00
+      arr.push 0xFF
+      arr.push 0x00
+
+    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+
+  robot.hear /b/i, (res) ->
+    arr = []
+    for i in [0..11]
+      arr.push 0x00
+      arr.push 0x00
+      arr.push 0xFF
+
+    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
 
   robot.hear /green/i, (res) ->
     console.log('green')
