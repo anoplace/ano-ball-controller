@@ -18,6 +18,8 @@ module.exports = (robot) ->
   #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254T2', {baudrate: 9600}, true
   lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254T2', {baudrate: 230400}, true
 
+  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 230400}, true
+
 
   lpr9201Driver.on 'open', () ->
     lpr9201Driver.send.activateRequest()
@@ -93,15 +95,31 @@ module.exports = (robot) ->
   udpPort.on 'message', (message) ->
     console.log message
 
-    index = message.address.replace '/ball/', ''
+    match = message.address.match /\/ball\/(\d+)/
 
-    index = parseInt index
+    if !match
+      return
+
+    index = parseInt match[1]
     colors = message.args
 
     io.sockets.emit('led', {
       index: index,
       colors: colors
     })
+
+    arr = []
+
+    for c in message.args
+      arr.push (c >> 16) & 0xFF
+      arr.push (c >> 8) & 0xFF
+      arr.push (c >> 0) & 0xFF
+
+    console.log index
+    console.log arr
+
+    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+
 
   udpPort.open()
 
@@ -242,8 +260,7 @@ module.exports = (robot) ->
       arr.push 0x00
       arr.push 0x00
 
-    #lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
-    lpr9201Driver.send.dataTransmission 1, arr, false, false, false
+    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
 
   robot.hear /g/i, (res) ->
     arr = []
@@ -260,6 +277,15 @@ module.exports = (robot) ->
       arr.push 0x00
       arr.push 0x00
       arr.push 0xFF
+
+    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+
+  robot.hear /x/i, (res) ->
+    arr = []
+    for i in [0..11]
+      arr.push 0x00
+      arr.push 0x00
+      arr.push 0x00
 
     lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
 
