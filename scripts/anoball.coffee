@@ -80,12 +80,8 @@ module.exports = (robot) ->
       console.log 'web interface disconnect'
 
 
-  power = 1
-
-
-  ledControllers = []
-
-
+  power = 0.4
+  nodeId = 1001
 
 
   udpPort = new Osc.UDPPort {
@@ -93,13 +89,26 @@ module.exports = (robot) ->
     localPort: 8000
   }
 
+
+
+  time = 0
+
+
   udpPort.on 'message', (message) ->
-    #console.log message
+    console.log message
+
 
     match = message.address.match /\/ball\/(\d+)/
 
     if !match
       return
+
+
+    if + new Date() - time < 50
+      return
+
+    time = + new Date()
+
 
     index = parseInt match[1]
     colors = message.args
@@ -109,257 +118,223 @@ module.exports = (robot) ->
       colors: colors
     })
 
-    arr = []
 
-    for c in message.args
-      arr.push (c >> 16) & 0xFF
-      arr.push (c >> 8) & 0xFF
-      arr.push (c >> 0) & 0xFF
+    # 1001
+    # 1002
+    # 1003
+    # 1005
+    # 1006
+    # 1011
 
+
+
+    ###
     maps = [
       1001, # 0
       1002, # 1
       1003, # 2
-      1004, # 3
+      #1004, # 3
       1005, # 4
       1006, # 5
-      1007, # 6
+      #1007, # 6
       1008, # 7
       1009, # 8
       1011, # 9
     ]
+    ###
+
+    maps = [
+      1011, # 9
+    ]
+
 
     if maps[index]
-      lpr9201Driver.send.dataTransmission maps[index], arr, false, false, false
-      #lpr9201Driver.send.dataTransmission maps[index], arr, false, false, true
+      sendColorsById maps[index], colors
+      #sendColorsBroadcast colors
 
 
   udpPort.open()
 
 
-  ###
-  colorApply(num) ->
-    red = (num >> 16) & 0xFF
-    green = (num >> 8) & 0xFF
-    blue = (num >> 0) & 0xFF
-
-    lpr9201Driver.send.dataTransmission 0x0001, [
-      0x00,
-      0x00,
-      red,
-      0x00,
-    ], false, false, true
-  ###
-
-
-
-
-
 ###############
 
-  robot.hear /baton connect/i, (msg) ->
+  robot.hear /^baton connect$/i, (msg) ->
     serialPort.open () ->
       msg.send 'connected'
 
-
-  robot.hear /baton disconnect/i, (msg) ->
+  robot.hear /^baton disconnect$/i, (msg) ->
     serialPort.close () ->
       msg.send 'disconnected'
 
-
-  robot.hear /baton setup/i, (msg) ->
+  robot.hear /^baton setup$/i, (msg) ->
     lpr9201Driver.send.readProfile 1
 
     setTimeout ->
       lpr9201Driver.send.activateRequest()
     , 2000
 
-  robot.hear /baton activate/i, (msg) ->
+  robot.hear /^baton activate$/i, (msg) ->
     lpr9201Driver.send.activateRequest()
 
-  robot.hear /baton reset/i, (msg) ->
+  robot.hear /^baton reset$/i, (msg) ->
     lpr9201Driver.send.reset()
 
-  robot.hear /baton profile read (\d+)/i, (msg) ->
+  robot.hear /^baton profile read (\d+)$/i, (msg) ->
     num = parseInt msg.match[1]
     lpr9201Driver.send.readProfile(num)
 
-  robot.hear /baton profile write (\d+)/i, (msg) ->
+  robot.hear /^baton profile write (\d+)$/i, (msg) ->
     num = parseInt msg.match[1]
     lpr9201Driver.send.writeProfile(num)
 
-  robot.hear /baton parameter reset/i, (msg) ->
+  robot.hear /^baton parameter reset$/i, (msg) ->
     lpr9201Driver.send.resetProfile()
 
-  robot.hear /baton parameter read (\d+)/i, (msg) ->
+  robot.hear /^baton parameter read (\d+)$/i, (msg) ->
     num = parseInt msg.match[1]
     lpr9201Driver.send.readProfileParameter(num)
 
-  robot.hear /baton parameter write (\d+) (\d+)/i, (msg) ->
+  robot.hear /^baton parameter write (\d+) (\d+)$/i, (msg) ->
     key = parseInt msg.match[1]
     value = parseInt msg.match[2]
     lpr9201Driver.send.writeProfileParameter(key, value)
 
-  robot.hear /baton status/i, (msg) ->
+  robot.hear /^baton status$/i, (msg) ->
     msg.send "baton status"
     lpr9201Driver.send.connectionConfirmation()
 
 
 ###############
 
+  robot.hear /^id (\d+)$/i, (res) ->
+    nodeId = parseInt res.match[1]
+    console.log nodeId
 
-  robot.hear /j/i, (res) ->
-    console.log 'send'
+  robot.hear /^rgb 0x(\w+)$/, (res) ->
+    c = parseInt res.match[1], 16
+    sendColorById nodeId, c
 
+  robot.hear /^RGB 0x(\w+)$/, (res) ->
+    c = parseInt res.match[1], 16
+    sendColorBroadcast c
+
+  robot.hear /^r$/, (res) ->
+    sendColorById nodeId, 0xFF0000
+
+  robot.hear /^R$/, (res) ->
+    sendColorBroadcast 0xFF0000
+
+  robot.hear /^g$/, (res) ->
+    sendColorById nodeId, 0x00FF00
+
+  robot.hear /^G/, (res) ->
+    sendColorBroadcast 0x00FF00
+
+  robot.hear /^b$/, (res) ->
+    sendColorById nodeId, 0x0000FF
+
+  robot.hear /^B/, (res) ->
+    sendColorBroadcast 0x0000FF
+
+  robot.hear /^x$/, (res) ->
+    sendColorById nodeId, 0x000000
+
+  robot.hear /^X/, (res) ->
+    sendColorBroadcast 0x000000
+
+
+  robot.hear /^g1$/i, (res) ->
     arr = []
 
     for i in [0..11]
-      arr.push i * 20
-      arr.push 0
-      arr.push 0
+      red = i * 20
+      green = 0
+      blue = 255 - i * 20
 
-    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+      arr.push (red << 16 | green << 8 | blue << 0)
+
+    sendColorsById nodeId, arr
 
 
-
-  robot.hear /k/i, (res) ->
-    console.log 'send'
-
+  robot.hear /^g2$/i, (res) ->
     arr = []
 
     for i in [0..11]
-      arr.push i * 20
-      arr.push 0
-      arr.push 255 - i * 20
+      red = i * 20
+      green = 255 - i * 20
+      blue = 0
 
-    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+      arr.push (red << 16 | green << 8 | blue << 0)
+
+    sendColorsById nodeId, arr
 
 
-  #
-  robot.hear /r/i, (res) ->
+  robot.hear /^g3$/i, (res) ->
     arr = []
+
     for i in [0..11]
-      arr.push 0xFF * power
-      arr.push 0x00 * power
-      arr.push 0x00 * power
+      red = 0
+      green = 255 - i * 20
+      blue = i * 20
 
-    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
-    #lpr9201Driver.send.dataTransmission 1011, arr, false, false, false
+      arr.push (red << 16 | green << 8 | blue << 0)
 
-  #
-  robot.hear /g/i, (res) ->
-    arr = []
-    for i in [0..11]
-      arr.push 0x00
-      arr.push 0xFF
-      arr.push 0x00
-
-    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+    sendColorsById nodeId, arr
 
 
-  #
-  robot.hear /b/i, (res) ->
-    arr = []
-    for i in [0..11]
-      arr.push 0x00
-      arr.push 0x00
-      arr.push 0xFF
+  robot.hear /^g4$/i, (res) ->
+    arr = [
+      0xFF0000,
+      0xFF0000,
+      0xFF0000,
+      0xFF0000,
+      0xFF0000,
 
-    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
+      0x0000FF,
+      0x0000FF,
+      0x0000FF,
+      0x0000FF,
+      0x0000FF,
 
+      0x0000FF,
+      0x0000FF,
+    ]
 
-  #
-  robot.hear /x/i, (res) ->
-    arr = []
-    for i in [0..11]
-      arr.push 0x00
-      arr.push 0x00
-      arr.push 0x00
-
-    lpr9201Driver.send.dataTransmission 0x0001, arr, false, false, true
-
-
-  #
-  robot.hear /green/i, (res) ->
-    console.log('green')
-    sendAll(0x00, 0xFF, 0x00)
+    sendColorsById nodeId, arr
 
 
-  #
-  robot.hear /blue/i, (res) ->
-    console.log('blue')
-    sendAll(0x00, 0x00, 0xFF)
+  robot.hear /^g5$/i, (res) ->
+    arr = [
+      0xFF0000,
+      0xFF0000,
+      0xFF0000,
+      0xFF0000,
+      0xFF0000,
 
+      0x00FF00,
+      0x00FF00,
+      0x00FF00,
+      0x00FF00,
+      0x00FF00,
 
-  #
-  robot.hear /black/i, (res) ->
-    console.log('blue')
-    sendAll(0x00, 0x00, 0x00)
+      0x00FF00,
+      0x00FF00,
+    ]
+
+    sendColorsById nodeId, arr
 
 
   #
-  robot.hear /^led$/i, (res) ->
-    sendAll(0x00, 0x00, 0x00)
+  robot.hear /^power$|^p$/i, (res) ->
+    console.log power
 
-
-  #
-  robot.hear /led (\d+) (\d+) (\d+) (\d+)\s*/i, (res) ->
-    index = parseInt res.match[1]
-    red = parseInt res.match[2]
-    green = parseInt res.match[3]
-    blue = parseInt res.match[4]
-
-    index -= 1
-
-    send index, red, green, blue
-
-
-  #
-  robot.hear /ledall (\d+) (\d+) (\d+)\s*/i, (res) ->
-    red = parseInt res.match[1]
-    green = parseInt res.match[2]
-    blue = parseInt res.match[3]
-
-    sendAll red, green, blue
-
-
-  #
-  robot.hear /power (\d+)\s*/i, (res) ->
-    p = parseInt res.match[1]
+  robot.hear /^power (\d+)$|^p (\d+)$/i, (res) ->
+    p = parseInt res.match[1] || res.match[2]
     power = p / 100
     console.log power
 
 
   #
-  send = (index, red, green, blue) ->
-    red /= 2
-    green /= 2
-    blue /= 2
-
-    red *= power
-    green *= power
-    blue *= power
-
-    red = Math.floor red
-    green = Math.floor green
-    blue = Math.floor blue
-
-    console.log index, red, green, blue
-
-    for ledController, i in ledControllers
-      _index = index - i * 4
-
-      if _index >= 0 && _index < 4
-        #console.log index, red, green, blue
-        ledController.write(new Buffer([_index, red, green, blue]))
-
-  sendAll = (red, green, blue) ->
-    ledcount = 8
-
-    for i in [0..ledcount-1]
-      send i, red, green, blue
-
-
   robot.router.get "/anoball", (req, res, next) ->
     res.setHeader 'content-type', 'text/html'
     res.end Fs.readFileSync('./scripts/index.html')
@@ -377,7 +352,7 @@ module.exports = (robot) ->
 
   # 指定IDのノードに色を送る
   sendColorById = (id, color) ->
-    sendColor id, color, true
+    sendColor id, color, false
 
 
   # 全てのノードに色を送る
@@ -390,11 +365,9 @@ module.exports = (robot) ->
     arr = []
 
     for i in [0..11]
-      arr.push (color >> 16) & 0xFF
-      arr.push (color >> 8) & 0xFF
-      arr.push (color >> 0) & 0xFF
+      arr.push color
 
-    sendColors id, colors, isBroadcast
+    sendColors id, arr, isBroadcast
 
   #####
 
@@ -410,11 +383,15 @@ module.exports = (robot) ->
 
   # ノードに色を送る
   sendColors = (id, colors, isBroadcast) ->
+    console.log 'send to lpr9201'
     arr = []
 
     for color in colors
-      arr.push (color >> 16) & 0xFF
-      arr.push (color >> 8) & 0xFF
-      arr.push (color >> 0) & 0xFF
+      arr.push (color >> 16) & 0xFF * power
+      arr.push (color >> 8) & 0xFF * power
+      arr.push (color >> 0) & 0xFF * power
+
+
+    console.log colors
 
     lpr9201Driver.send.dataTransmission id, arr, false, false, isBroadcast
