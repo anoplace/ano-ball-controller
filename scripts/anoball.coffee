@@ -18,7 +18,7 @@ module.exports = (robot) ->
   #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254T2', {baudrate: 9600}, true
   #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254T2', {baudrate: 230400}, true
 
-  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 9600}, true
+  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 9600}, true
   lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 230400}, true
 
 
