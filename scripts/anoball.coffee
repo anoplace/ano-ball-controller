@@ -243,6 +243,37 @@ module.exports = (robot) ->
     sendColorBroadcast 0x000000
 
 
+
+  robot.hear /^g 0x(\w+) (\d+)$/i, (res) ->
+    arr = [
+      0x000000,
+      0x000000,
+      0x000000,
+      0x000000,
+      0x000000,
+
+      0x000000,
+      0x000000,
+      0x000000,
+      0x000000,
+      0x000000,
+
+      0x000000,
+      0x000000,
+    ]
+
+    color = parseInt res.match[1], 16
+    index = parseInt res.match[2]
+
+    arr[index] = color
+
+    console.log arr
+
+    #sendColorsById nodeId, arr
+    sendColorsBroadcast arr
+
+
+
   robot.hear /^g1$/i, (res) ->
     arr = []
 
@@ -324,6 +355,30 @@ module.exports = (robot) ->
     sendColorsById nodeId, arr
 
 
+  robot.hear /^w (\d+)$/i, (res) ->
+    arr = [
+      0x000000,
+      0x000000,
+      0x000000,
+      0x000000,
+      0x000000,
+
+      0x000000,
+      0x000000,
+      0x000000,
+      0x000000,
+      0x000000,
+
+      0x000000,
+      0x000000,
+    ]
+
+    index = parseInt res.match[1]
+    arr[index] = 0x0000FF
+
+    sendColorsById nodeId, arr
+
+
   #
   robot.hear /^power$|^p$/i, (res) ->
     console.log power
@@ -387,9 +442,9 @@ module.exports = (robot) ->
     arr = []
 
     for color in colors
-      arr.push (color >> 16) & 0xFF * power
-      arr.push (color >> 8) & 0xFF * power
-      arr.push (color >> 0) & 0xFF * power
+      arr.push (color >> 16) & 0xFF * power  # red
+      arr.push (color >> 8) & 0xFF * power  # green
+      arr.push (color >> 0) & 0xFF * power  # blue
 
 
     console.log colors
