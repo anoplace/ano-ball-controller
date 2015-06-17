@@ -82,6 +82,7 @@ module.exports = (robot) ->
 
   power = 0.4
   nodeId = 1001
+  duration = 1000
 
 
   udpPort = new Osc.UDPPort {
@@ -209,6 +210,10 @@ module.exports = (robot) ->
   robot.hear /^id (\d+)$/i, (res) ->
     nodeId = parseInt res.match[1]
     console.log nodeId
+
+  robot.hear /^duration (\d+)$/i, (res) ->
+    duration = parseInt res.match[1]
+    console.log duration
 
   robot.hear /^rgb 0x(\w+)$/, (res) ->
     c = parseInt res.match[1], 16
@@ -439,7 +444,10 @@ module.exports = (robot) ->
   # ノードに色を送る
   sendColors = (id, colors, isBroadcast) ->
     console.log 'send to lpr9201'
-    arr = []
+    arr = [
+      (duration >> 8) & 0xFF,
+      (duration >> 0) & 0xFF,
+    ]
 
     for color in colors
       arr.push (color >> 16) & 0xFF * power  # red
@@ -447,6 +455,8 @@ module.exports = (robot) ->
       arr.push (color >> 0) & 0xFF * power  # blue
 
 
-    console.log colors
+    #console.log colors
+    console.log arr
+    console.log arr.length
 
     lpr9201Driver.send.dataTransmission id, arr, false, false, isBroadcast
