@@ -16,10 +16,10 @@ module.exports = (robot) ->
   Result = Lpr9201.Result
 
   #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90253N1', {baudrate: 9600}, true
-  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90253N1', {baudrate: 230400}, true
+  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90253N1', {baudrate: 230400}, true
 
   #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 9600}, true
-  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 230400}, true
+  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 230400}, true
 
 
   lpr9201Driver.on 'open', () ->
