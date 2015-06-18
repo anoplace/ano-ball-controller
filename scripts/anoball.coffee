@@ -100,14 +100,15 @@ module.exports = (robot) ->
       return
 
 
-    if + new Date() - time < 50
+    if + new Date() - time < 30
       return
 
     time = + new Date()
 
 
     index = parseInt match[1]
-    duration = message.args.shift() << 8 | message.args.shift()
+    broadcast = message.args.shift()
+    duration = message.args.shift()
     colors = message.args
 
     io.sockets.emit('led', {
@@ -135,9 +136,11 @@ module.exports = (robot) ->
       1011, # 9
     ]
 
-    if maps[index]
-      sendColorsById maps[index], colors
-      #sendColorsBroadcast colors
+    if broadcast
+      sendColorsBroadcast colors
+    else
+      if maps[index]
+        sendColorsById maps[index], colors
 
   udpPort.open()
 
