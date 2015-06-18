@@ -15,11 +15,8 @@ module.exports = (robot) ->
   Lpr9201 = require 'lpr9201'
   Result = Lpr9201.Result
 
-  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254T2', {baudrate: 9600}, true
-  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254T2', {baudrate: 230400}, true
-
-  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 9600}, true
-  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 230400}, true
+  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90253N1', {baudrate: 9600}, true
+  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90253N1', {baudrate: 230400}, true
 
 
   lpr9201Driver.on 'open', () ->
@@ -29,8 +26,8 @@ module.exports = (robot) ->
   lpr9201Driver.on 'close', () ->
     console.log 'lpr9201 close'
 
-  lpr9201Driver.on 'error', () ->
-    console.log 'lpr9201 error'
+  lpr9201Driver.on 'error', (e) ->
+    console.log 'lpr9201 error', e
 
   lpr9201Driver.on 'data', (data) ->
     if Result.Ack.canParse(data)
@@ -80,6 +77,7 @@ module.exports = (robot) ->
       console.log 'web interface disconnect'
 
 
+  time = 0
   power = 0.4
   nodeId = 1001
   duration = 1000
@@ -90,14 +88,8 @@ module.exports = (robot) ->
     localPort: 8000
   }
 
-
-
-  time = 0
-
-
   udpPort.on 'message', (message) ->
     console.log message
-
 
     match = message.address.match /\/ball\/(\d+)/
 
@@ -112,13 +104,13 @@ module.exports = (robot) ->
 
 
     index = parseInt match[1]
+    duration = message.args.shift() << 8 | message.args.shift()
     colors = message.args
 
     io.sockets.emit('led', {
       index: index,
       colors: colors
     })
-
 
     # 1001
     # 1002
@@ -127,89 +119,84 @@ module.exports = (robot) ->
     # 1006
     # 1011
 
-
-
-    ###
     maps = [
       1001, # 0
       1002, # 1
       1003, # 2
-      #1004, # 3
+      1004, # 3
       1005, # 4
       1006, # 5
-      #1007, # 6
+      1007, # 6
       1008, # 7
       1009, # 8
       1011, # 9
     ]
-    ###
-
-    maps = [
-      1011, # 9
-    ]
-
 
     if maps[index]
       sendColorsById maps[index], colors
       #sendColorsBroadcast colors
 
-
   udpPort.open()
-
 
 ###############
 
-  robot.hear /^baton connect$/i, (msg) ->
+  robot.hear /^lpr9201 connect$/i, (msg) ->
     serialPort.open () ->
       msg.send 'connected'
 
-  robot.hear /^baton disconnect$/i, (msg) ->
+  robot.hear /^lpr9201 disconnect$/i, (msg) ->
     serialPort.close () ->
       msg.send 'disconnected'
 
-  robot.hear /^baton setup$/i, (msg) ->
+  robot.hear /^lpr9201 setup$/i, (msg) ->
     lpr9201Driver.send.readProfile 1
 
     setTimeout ->
       lpr9201Driver.send.activateRequest()
     , 2000
 
-  robot.hear /^baton activate$/i, (msg) ->
+  robot.hear /^lpr9201 activate$/i, (msg) ->
     lpr9201Driver.send.activateRequest()
 
-  robot.hear /^baton reset$/i, (msg) ->
+  robot.hear /^lpr9201 reset$/i, (msg) ->
     lpr9201Driver.send.reset()
 
-  robot.hear /^baton profile read (\d+)$/i, (msg) ->
+  robot.hear /^lpr9201 profile read (\d+)$/i, (msg) ->
     num = parseInt msg.match[1]
     lpr9201Driver.send.readProfile(num)
 
-  robot.hear /^baton profile write (\d+)$/i, (msg) ->
+  robot.hear /^lpr9201 profile write (\d+)$/i, (msg) ->
     num = parseInt msg.match[1]
     lpr9201Driver.send.writeProfile(num)
 
-  robot.hear /^baton parameter reset$/i, (msg) ->
+  robot.hear /^lpr9201 parameter reset$/i, (msg) ->
     lpr9201Driver.send.resetProfile()
 
-  robot.hear /^baton parameter read (\d+)$/i, (msg) ->
+  robot.hear /^lpr9201 parameter read (\d+)$/i, (msg) ->
     num = parseInt msg.match[1]
     lpr9201Driver.send.readProfileParameter(num)
 
-  robot.hear /^baton parameter write (\d+) (\d+)$/i, (msg) ->
+  robot.hear /^lpr9201 parameter write (\d+) (\d+)$/i, (msg) ->
     key = parseInt msg.match[1]
     value = parseInt msg.match[2]
     lpr9201Driver.send.writeProfileParameter(key, value)
 
-  robot.hear /^baton status$/i, (msg) ->
-    msg.send "baton status"
+  robot.hear /^lpr9201 status$/i, (msg) ->
+    msg.send "lpr9201 status"
     lpr9201Driver.send.connectionConfirmation()
 
 
 ###############
 
+  robot.hear /^id$/i, (res) ->
+    console.log nodeId
+
   robot.hear /^id (\d+)$/i, (res) ->
     nodeId = parseInt res.match[1]
     console.log nodeId
+
+  robot.hear /^duration$/i, (res) ->
+    console.log duration
 
   robot.hear /^duration (\d+)$/i, (res) ->
     duration = parseInt res.match[1]
