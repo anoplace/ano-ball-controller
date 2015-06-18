@@ -16,7 +16,10 @@ module.exports = (robot) ->
   Result = Lpr9201.Result
 
   #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90253N1', {baudrate: 9600}, true
-  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90253N1', {baudrate: 230400}, true
+  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90253N1', {baudrate: 230400}, true
+
+  #lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 9600}, true
+  lpr9201Driver = new Lpr9201.Driver '/dev/tty.usbserial-A90254TU', {baudrate: 230400}, true
 
 
   lpr9201Driver.on 'open', () ->
@@ -78,7 +81,7 @@ module.exports = (robot) ->
 
 
   time = 0
-  power = 0.4
+  power = 0.8
   nodeId = 1001
   duration = 1000
 
@@ -185,7 +188,6 @@ module.exports = (robot) ->
     msg.send "lpr9201 status"
     lpr9201Driver.send.connectionConfirmation()
 
-
 ###############
 
   robot.hear /^id$/i, (res) ->
@@ -233,7 +235,6 @@ module.exports = (robot) ->
 
   robot.hear /^X/, (res) ->
     sendColorBroadcast 0x000000
-
 
 
   robot.hear /^g 0x(\w+) (\d+)$/i, (res) ->
@@ -443,7 +444,7 @@ module.exports = (robot) ->
 
 
     #console.log colors
-    console.log arr
-    console.log arr.length
+    #console.log arr
+    #console.log arr.length
 
     lpr9201Driver.send.dataTransmission id, arr, false, false, isBroadcast
