@@ -12,10 +12,10 @@
 * duration (\d+)
 	* 変化時間を設定
 
-* rgb 0x(\w+)$/, (res) ->
+* rgb 0x(\w+)
 	* 指定のボールをRGB値で光らせる 例 rgb 0xFF0000
 
-* RGB 0x(\w+)$/, (res) ->
+* RGB 0x(\w+)
 	* 全てのボールをRGB値で光らせる 例 rgb 0xFF0000
 
 * r
