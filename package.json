@@ -1,0 +1,19 @@
+{
+  "name": "gradation-ball-controller",
+  "version": "0.0.0",
+  "private": true,
+  "author": "yuhki50 <yuhki50@gmail.com>",
+  "description": "Gradation ball controller",
+  "dependencies": {
+    "hubot": "^2.12.0",
+    "hubot-diagnostics": "0.0.1",
+    "hubot-help": "^0.1.1",
+    "lpr9201": "0.0.4",
+    "osc": "^1.1.1",
+    "serialport": "^1.6.3",
+    "socket.io": "^1.3.5"
+  },
+  "engines": {
+    "node": "0.10.x"
+  }
+}
